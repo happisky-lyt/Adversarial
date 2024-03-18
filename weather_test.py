@@ -1,0 +1,558 @@
+from torchvision import transforms
+import torch
+import numpy as np
+import matplotlib.pyplot as plt
+import cv2 as cv2
+import random
+
+def visualize(image):
+    
+    plt.figure(figsize=(10, 10))
+    plt.axis('off')
+    plt.imshow(image)
+    
+def hls(image, src='RGB'):
+
+    image_HLS = eval('cv2.cvtColor(image,cv2.COLOR_'+src.upper()+'2HLS)')
+    
+    return image_HLS
+
+def rgb(image, src='BGR'):
+
+    image_RGB = eval('cv2.cvtColor(image,cv2.COLOR_'+src.upper()+'2RGB)')
+    
+    return image_RGB
+
+""" """
+def change_light(image, coeff):
+    
+    image_HLS = cv2.cvtColor(image, cv2.COLOR_RGB2HLS) ## Conversion to HLS
+    image_HLS = np.array(image_HLS, dtype = np.float64) 
+    image_HLS[:,:,1] = image_HLS[:,:,1]*coeff ## Scale pixel values up or down for channel 1(Lightness)
+    
+    if(coeff>1):
+        image_HLS[:,:,1][image_HLS[:,:,1]>255] = 255 ## Sets all values above 255 to 255
+    else:
+        image_HLS[:,:,1][image_HLS[:,:,1]<0] = 0
+    
+    image_HLS = np.array(image_HLS, dtype = np.uint8)
+    image_RGB = cv2.cvtColor(image_HLS, cv2.COLOR_HLS2RGB) ## Conversion to RGB
+    
+    return image_RGB 
+
+""" """
+
+""" LIGHTEN """
+def brighten(image1, image2, image3, image4, image5, brightness_coeff=-1): ##function to brighten the image
+
+    # create mask
+    brighten_mask1 = image1.squeeze(0)
+    brighten_mask2 = image2.squeeze(0)
+    brighten_mask3 = image3.squeeze(0)
+    brighten_mask4 = image4.squeeze(0)
+    brighten_mask5 = image5.squeeze(0)
+    
+    brighten_mask1 = brighten_mask1.detach().cpu().numpy()
+    brighten_mask2 = brighten_mask2.detach().cpu().numpy()
+    brighten_mask3 = brighten_mask3.detach().cpu().numpy()
+    brighten_mask4 = brighten_mask4.detach().cpu().numpy()
+    brighten_mask5 = brighten_mask5.detach().cpu().numpy()
+
+    brighten_mask1 = np.moveaxis(brighten_mask1, 0, -1)
+    brighten_mask2 = np.moveaxis(brighten_mask2, 0, -1)
+    brighten_mask3 = np.moveaxis(brighten_mask3, 0, -1)
+    brighten_mask4 = np.moveaxis(brighten_mask4, 0, -1)
+    brighten_mask5 = np.moveaxis(brighten_mask5, 0, -1)
+    
+    brighten_mask1 = brighten_mask1*255
+    brighten_mask2 = brighten_mask2*255
+    brighten_mask3 = brighten_mask3*255
+    brighten_mask4 = brighten_mask4*255
+    brighten_mask5 = brighten_mask5*255
+
+    brighten_mask1 = brighten_mask1.astype('uint8')
+    brighten_mask2 = brighten_mask2.astype('uint8')
+    brighten_mask3 = brighten_mask3.astype('uint8')
+    brighten_mask4 = brighten_mask4.astype('uint8')
+    brighten_mask5 = brighten_mask5.astype('uint8')
+
+    if(brightness_coeff == -1):
+        brightness_coeff_t = 1 + random.uniform(0,0.2) ## coeff between 1.0 and 1.5
+    else:
+        brightness_coeff_t = 1 + brightness_coeff ## coeff between 1.0 and 2.0
+            
+    brighten_mask1 = change_light(brighten_mask1, brightness_coeff_t)
+    brighten_mask2 = change_light(brighten_mask2, brightness_coeff_t)
+    brighten_mask3 = change_light(brighten_mask3, brightness_coeff_t)
+    brighten_mask4 = change_light(brighten_mask4, brightness_coeff_t)
+    brighten_mask5 = change_light(brighten_mask5, brightness_coeff_t)
+
+    
+    # normalise mask to 0-1
+    brighten_mask1  = brighten_mask1/255
+    brighten_mask2  = brighten_mask2/255
+    brighten_mask3  = brighten_mask3/255
+    brighten_mask4  = brighten_mask4/255
+    brighten_mask5  = brighten_mask5/255
+    
+    # convert to tensor
+    tf = transforms.ToTensor()
+    brighten_mask1  = tf(brighten_mask1 )
+    brighten_mask2  = tf(brighten_mask2 )
+    brighten_mask3  = tf(brighten_mask3 )
+    brighten_mask4  = tf(brighten_mask4 )
+    brighten_mask5  = tf(brighten_mask5 )
+
+    brighten_mask1  = brighten_mask1.unsqueeze(0)
+    brighten_mask2  = brighten_mask2.unsqueeze(0)
+    brighten_mask3  = brighten_mask3.unsqueeze(0)
+    brighten_mask4  = brighten_mask4.unsqueeze(0)
+    brighten_mask5  = brighten_mask5.unsqueeze(0)
+
+    brighten_mask1  = brighten_mask1.type(torch.cuda.FloatTensor)
+    brighten_mask2  = brighten_mask2.type(torch.cuda.FloatTensor)
+    brighten_mask3  = brighten_mask3.type(torch.cuda.FloatTensor)
+    brighten_mask4  = brighten_mask4.type(torch.cuda.FloatTensor)
+    brighten_mask5  = brighten_mask5.type(torch.cuda.FloatTensor)
+
+    brighten_mask1  = brighten_mask1 - image1
+    brighten_mask2  = brighten_mask2 - image2
+    brighten_mask3  = brighten_mask3 - image3
+    brighten_mask4  = brighten_mask4 - image4
+    brighten_mask5  = brighten_mask5 - image5
+    
+    # add brighten mask to image
+    image_rgb1 = image1 + brighten_mask1
+    image_rgb2 = image2 + brighten_mask2 
+    image_rgb3 = image3 + brighten_mask3 
+    image_rgb4 = image4 + brighten_mask4
+    image_rgb5 = image5 + brighten_mask5 
+    
+    image_rgb1 = torch.clamp(image_rgb1, 0.000001, 0.99999) 
+    image_rgb2 = torch.clamp(image_rgb2, 0.000001, 0.99999) 
+    image_rgb3 = torch.clamp(image_rgb3, 0.000001, 0.99999) 
+    image_rgb4 = torch.clamp(image_rgb4, 0.000001, 0.99999)
+    image_rgb5 = torch.clamp(image_rgb5, 0.000001, 0.99999)  
+
+    
+    return image_rgb1, image_rgb2, image_rgb3, image_rgb4, image_rgb5
+
+""" """
+
+""" DARKEN """
+def darken(image1, image2, image3, image4, image5, darkness_coeff=-1): ##function to darken the image
+
+    # create mask    
+    darken_mask1 = image1.squeeze(0)
+    darken_mask2 = image2.squeeze(0)
+    darken_mask3 = image3.squeeze(0)
+    darken_mask4 = image4.squeeze(0)
+    darken_mask5 = image5.squeeze(0)
+
+    darken_mask1 = darken_mask1.detach().cpu().numpy()
+    darken_mask2 = darken_mask2.detach().cpu().numpy()
+    darken_mask3 = darken_mask3.detach().cpu().numpy()
+    darken_mask4 = darken_mask4.detach().cpu().numpy()
+    darken_mask5 = darken_mask5.detach().cpu().numpy()
+
+    darken_mask1 = np.moveaxis(darken_mask1, 0, -1)
+    darken_mask2 = np.moveaxis(darken_mask2, 0, -1)
+    darken_mask3 = np.moveaxis(darken_mask3, 0, -1)
+    darken_mask4 = np.moveaxis(darken_mask4, 0, -1)
+    darken_mask5 = np.moveaxis(darken_mask5, 0, -1)
+
+    darken_mask1 = darken_mask1*255
+    darken_mask2 = darken_mask2*255
+    darken_mask3 = darken_mask3*255
+    darken_mask4 = darken_mask4*255
+    darken_mask5 = darken_mask5*255
+
+    darken_mask1 = darken_mask1.astype('uint8')
+    darken_mask2 = darken_mask2.astype('uint8')
+    darken_mask3 = darken_mask3.astype('uint8')
+    darken_mask4 = darken_mask4.astype('uint8')
+    darken_mask5 = darken_mask5.astype('uint8')
+
+
+    if(darkness_coeff == -1):
+        darkness_coeff_t = 1 - random.uniform(0,0.2)
+    else:
+        darkness_coeff_t = 1- darkness_coeff  
+        
+    darken_mask1 = change_light(darken_mask1, darkness_coeff_t)
+    darken_mask2 = change_light(darken_mask2, darkness_coeff_t)
+    darken_mask3 = change_light(darken_mask3, darkness_coeff_t)
+    darken_mask4 = change_light(darken_mask4, darkness_coeff_t)
+    darken_mask5 = change_light(darken_mask5, darkness_coeff_t)
+    
+    # normalise mask to 0-1
+    darken_mask1  = darken_mask1/255
+    darken_mask2  = darken_mask2/255
+    darken_mask3  = darken_mask3/255
+    darken_mask4  = darken_mask4/255
+    darken_mask5  = darken_mask5/255
+    
+    # convert to tensor
+    tf = transforms.ToTensor()
+    darken_mask1 = tf(darken_mask1)
+    darken_mask2 = tf(darken_mask2)
+    darken_mask3 = tf(darken_mask3)
+    darken_mask4 = tf(darken_mask4)
+    darken_mask5 = tf(darken_mask5)
+
+    darken_mask1 = darken_mask1.unsqueeze(0)
+    darken_mask2 = darken_mask2.unsqueeze(0)
+    darken_mask3 = darken_mask3.unsqueeze(0)
+    darken_mask4 = darken_mask4.unsqueeze(0)
+    darken_mask5 = darken_mask5.unsqueeze(0)
+
+    darken_mask1 = darken_mask1.type(torch.cuda.FloatTensor)
+    darken_mask2 = darken_mask2.type(torch.cuda.FloatTensor)
+    darken_mask3 = darken_mask3.type(torch.cuda.FloatTensor)
+    darken_mask4 = darken_mask4.type(torch.cuda.FloatTensor)
+    darken_mask5 = darken_mask5.type(torch.cuda.FloatTensor)
+
+
+    darken_mask1 = image1 - darken_mask1
+    darken_mask2 = image2 - darken_mask2
+    darken_mask3 = image3 - darken_mask3
+    darken_mask4 = image4 - darken_mask4
+    darken_mask5 = image5 - darken_mask5
+
+    
+    # add darken mask to image
+    image_rgb1 = image1 - darken_mask1
+    image_rgb2 = image2 - darken_mask2 
+    image_rgb3 = image3 - darken_mask3 
+    image_rgb4 = image4 - darken_mask4
+    image_rgb5 = image5 - darken_mask5 
+
+    
+    
+    image_rgb1 = torch.clamp(image_rgb1, 0.000001, 0.99999) 
+    image_rgb2 = torch.clamp(image_rgb2, 0.000001, 0.99999) 
+    image_rgb3 = torch.clamp(image_rgb3, 0.000001, 0.99999) 
+    image_rgb4 = torch.clamp(image_rgb4, 0.000001, 0.99999)
+    image_rgb5 = torch.clamp(image_rgb5, 0.000001, 0.99999)  
+
+    
+    return image_rgb1, image_rgb2, image_rgb3, image_rgb4, image_rgb5
+
+""" """
+
+""" SNOW """
+def snow_process(image, snow_coeff):
+    
+    image_HLS = cv2.cvtColor(image,cv2.COLOR_RGB2HLS) ## Conversion to HLS
+    image_HLS = np.array(image_HLS, dtype = np.float64) 
+    
+    # define parameters
+    brightness_coefficient = 2.5 
+    imshape = image.shape
+    snow_point = snow_coeff ## increase this for more snow
+    
+    image_HLS[:,:,1][image_HLS[:,:,1]<snow_point] = image_HLS[:,:,1][image_HLS[:,:,1]<snow_point]*brightness_coefficient ## scale pixel values up for channel 1(Lightness)
+    image_HLS[:,:,1][image_HLS[:,:,1]>255] = 255 ##Sets all values above 255 to 255
+    image_HLS = np.array(image_HLS, dtype = np.uint8)
+    
+    image_RGB = cv2.cvtColor(image_HLS,cv2.COLOR_HLS2RGB) ## Conversion to RGB
+    
+    return image_RGB
+
+def add_snow(image, snow_coeff=-1):
+
+    # create mask
+    snow_mask = image.squeeze(0)
+    snow_mask = snow_mask.detach().cpu().numpy()
+    snow_mask = np.moveaxis(snow_mask, 0, -1)
+    snow_mask = snow_mask*255
+    snow_mask = snow_mask.astype('uint8')
+    
+    # define parameters
+    snow_coeff = random.uniform(0,1)
+    snow_coeff *= 255/2
+    snow_coeff += 255/3
+    
+    snow_mask = snow_process(snow_mask, snow_coeff)
+    
+    # normalise mask to 0-1
+    snow_mask = snow_mask/255
+    
+    # convert to tensor
+    tf = transforms.ToTensor()
+    snow_mask = tf(snow_mask)
+    snow_mask = snow_mask.unsqueeze(0)
+    snow_mask = snow_mask.type(torch.cuda.FloatTensor)
+
+    snow_mask = snow_mask - image
+    
+    # add snow to image
+    image_rgb = image + snow_mask
+    
+    image_rgb = torch.clamp(image_rgb, 0.000001, 0.99999) 
+
+    return image_rgb
+
+""" """
+
+""" RAIN """
+def generate_random_lines(imshape, slant, drop_length, rain_type):
+    
+    drops = []
+    area = imshape[0]*imshape[1]
+    no_of_drops = area//600
+
+    if rain_type.lower() == 'drizzle':
+        no_of_drops = area//770
+        drop_length = 10
+    elif rain_type.lower() == 'heavy':
+        drop_length = 30
+    elif rain_type.lower() == 'torrential':
+        no_of_drops = area//500
+        drop_length = 60
+
+    for i in range(no_of_drops): ## If You want heavy rain, try increasing this
+        if slant < 0:
+            x = np.random.randint(slant, imshape[1])
+        else:
+            x = np.random.randint(0, imshape[1]-slant)
+            
+        y = np.random.randint(0, imshape[0]-drop_length)
+        drops.append((x, y))
+    
+    return drops, drop_length
+
+def rain_process(image, slant, drop_length, drop_color, drop_width, rain_drops):
+    
+    imshape = image.shape  
+    image_t = image.copy()
+    
+    for rain_drop in rain_drops:
+        cv2.line(image_t, (rain_drop[0],rain_drop[1]), (rain_drop[0]+slant,rain_drop[1]+drop_length), drop_color, drop_width)
+        
+    image = cv2.blur(image_t,(7,7)) ## rainy view are blurry
+    
+    brightness_coefficient = 0.7 ## rainy days are usually shady 
+    
+    image_HLS = hls(image) ## Conversion to HLS
+    image_HLS[:,:,1] = image_HLS[:,:,1]*brightness_coefficient ## scale pixel values down for channel 1(Lightness)
+    
+    image_RGB = rgb(image_HLS, 'hls') ## Conversion to RGB
+    
+    return image_RGB
+
+##rain_type='drizzle','heavy','torrential'
+def add_rain(image, slant=-1, drop_length=20, drop_width=1, drop_color=(200,200,200), rain_type='None'): ## (200,200,200) a shade of gray
+
+    rain_mask = image.squeeze(0)
+    rain_mask = rain_mask.detach().cpu().numpy()
+    rain_mask = np.moveaxis(rain_mask, 0, -1)
+    rain_mask = rain_mask*255
+    rain_mask = rain_mask.astype('uint8')
+
+    slant_extreme = slant
+    imshape = rain_mask.shape
+    
+    if slant_extreme == -1:
+        slant= np.random.randint(-10,10) ##generate random slant if no slant value is given
+    
+    rain_drops, drop_length = generate_random_lines(imshape, slant, drop_length, rain_type)
+    
+    rain_mask = rain_process(rain_mask, slant_extreme, drop_length, drop_color, drop_width, rain_drops)
+    
+    # normalise mask to 0-1
+    rain_mask = rain_mask/255
+    
+    # convert mask to tensor
+    tf = transforms.ToTensor()
+    rain_mask = tf(rain_mask)
+    rain_mask = rain_mask.unsqueeze(0)
+    rain_mask = rain_mask.type(torch.cuda.FloatTensor)
+    
+    rain_mask = rain_mask - image
+    
+    # add rain to image 
+    image_rgb = image + rain_mask
+    
+    image_rgb = torch.clamp(image_rgb, 0.000001, 0.99999)    
+
+    return image_rgb
+
+""" """
+
+""" FOG """
+def add_blur(image, x, y, hw, fog_coeff):
+    
+    overlay = image.copy()
+    output = image.copy()
+    alpha = 0.08*fog_coeff
+    rad = hw//2
+    point = (x+hw//2, y+hw//2)
+
+    cv2.circle(overlay, point, int(rad), (255,255,255), -1)
+    
+    cv2.addWeighted(overlay, alpha, output, 1 -alpha , 0, output)
+    
+    return output
+
+def generate_random_blur_coordinates(imshape, hw):
+    
+    blur_points = []
+    midx = imshape[1]//2-2*hw
+    midy = imshape[0]//2-hw
+    index = 1
+    
+    while(midx > -hw or midy > -hw):
+        for i in range(hw//10*index):
+            x = np.random.randint(midx, imshape[1]-midx-hw)
+            y = np.random.randint(midy, imshape[0]-midy-hw)
+            blur_points.append((x,y))
+            
+        midx -= 3*hw*imshape[1]//sum(imshape)
+        midy -= 3*hw*imshape[0]//sum(imshape)
+        index += 1
+        
+    return blur_points
+
+def add_fog(image, fog_coeff=-1):
+    
+    fog_mask = image.squeeze(0)
+    fog_mask = fog_mask.detach().cpu().numpy()
+    fog_mask = np.moveaxis(fog_mask, 0, -1)
+    fog_mask = fog_mask*255
+    fog_mask = fog_mask.astype('uint8')
+    
+    imshape = fog_mask.shape
+    
+    if fog_coeff == -1:
+        fog_coeff_t = random.uniform(0.3,1)
+    else:
+        fog_coeff_t = fog_coeff
+        
+    hw = int(imshape[1]//3*fog_coeff_t)
+    haze_list = generate_random_blur_coordinates(imshape, hw)
+    
+    for haze_points in haze_list: 
+        fog_mask = add_blur(fog_mask, haze_points[0], haze_points[1], hw, fog_coeff_t) 
+    
+    fog_mask = cv2.blur(fog_mask, (hw//10,hw//10))
+    
+    # normalise mask to 0-1
+    fog_mask = fog_mask/255
+    
+    # convert mask to tensor
+    tf = transforms.ToTensor()
+    fog_mask = tf(fog_mask)
+    fog_mask = fog_mask.unsqueeze(0)
+    fog_mask = fog_mask.type(torch.cuda.FloatTensor)
+    
+    fog_mask = fog_mask - image
+    
+    # add fog to image 
+    image_rgb = image + fog_mask
+    
+    image_rgb = torch.clamp(image_rgb, 0.000001, 0.99999)
+    
+    return image_rgb
+""" """
+
+""" AUTUMN """
+def autumn_process(image):
+    
+    image_t = image.copy()
+    imshape = image_t.shape
+    image_hls = hls(image_t)
+    
+    step = 8
+    aut_colors = [1,5,9,11]
+    col = aut_colors[random.randint(0,3)]
+    
+    for i in range(0,imshape[1],step):
+        for j in range(0,imshape[0],step):
+            avg = np.average(image_hls[j:j+step,i:i+step,0])
+#             print(avg)
+            if(avg >20 and avg< 100 and np.average(image[j:j+step,i:i+step,1])<100):
+                image_hls[j:j+step,i:i+step,0] = col
+                image_hls[j:j+step,i:i+step,2] = 255
+    
+    return rgb(image_hls,'hls')
+
+
+def add_autumn(image):
+
+    autumn_mask = image.squeeze(0)
+    autumn_mask = autumn_mask.detach().cpu().numpy()
+    autumn_mask = np.moveaxis(autumn_mask, 0, -1)
+    autumn_mask = autumn_mask*255
+    autumn_mask = autumn_mask.astype('uint8')
+
+    autumn_mask = autumn_process(autumn_mask)
+    
+    # normalise mask to 0-1
+    autumn_mask  = autumn_mask/255
+    
+    # convert to tensor
+    tf = transforms.ToTensor()
+    autumn_mask = tf(autumn_mask)
+    autumn_mask = autumn_mask.unsqueeze(0)
+    autumn_mask = autumn_mask.type(torch.cuda.FloatTensor)
+
+    autumn_mask = autumn_mask - image
+    
+    # add autumn leaves to image
+    image_rgb = image + autumn_mask
+    
+    image_rgb = torch.clamp(image_rgb, 0.000001, 0.99999) 
+
+    return image_rgb
+
+
+def shadow_process(image,no_of_shadows,x1,y1,x2,y2, shadow_dimension):
+    image_HLS = cv2.cvtColor(image,cv2.COLOR_RGB2HLS) ## Conversion to HLS
+    mask = np.zeros_like(image) 
+    imshape = image.shape
+    vertices_list= generate_shadow_coordinates(imshape, no_of_shadows,(x1,y1,x2,y2), shadow_dimension) #3 getting list of shadow vertices
+    for vertices in vertices_list: 
+        cv2.fillPoly(mask, vertices, 255) ## adding all shadow polygons on empty mask, single 255 denotes only red channel
+    image_HLS[:,:,1][mask[:,:,0]==255] = image_HLS[:,:,1][mask[:,:,0]==255]*0.5   ## if red channel is hot, image's "Lightness" channel's brightness is lowered 
+    image_RGB = cv2.cvtColor(image_HLS,cv2.COLOR_HLS2RGB) ## Conversion to RGB
+    return image_RGB
+
+def add_shadow(image,no_of_shadows=1,rectangular_roi=(-1,-1,-1,-1), shadow_dimension=5):## ROI:(top-left x1,y1, bottom-right x2,y2), shadow_dimension=no. of sides of polygon generated
+    verify_image(image)
+    if not(is_numeric(no_of_shadows) and no_of_shadows>=1 and no_of_shadows<=10):
+        raise Exception(err_shadow_count)
+    if not(is_numeric(shadow_dimension) and shadow_dimension>=3 and shadow_dimension<=10):
+        raise Exception(err_shadow_dimension)
+    if is_tuple(rectangular_roi) and is_numeric_list_or_tuple(rectangular_roi) and len(rectangular_roi)==4:
+        x1=rectangular_roi[0]
+        y1=rectangular_roi[1]
+        x2=rectangular_roi[2]
+        y2=rectangular_roi[3]
+    else:
+        raise Exception(err_invalid_rectangular_roi)
+    if rectangular_roi==(-1,-1,-1,-1):
+        x1=0
+        
+        if(is_numpy_array(image)):
+            y1=image.shape[0]//2
+            x2=image.shape[1]
+            y2=image.shape[0]
+        else:
+            y1=image[0].shape[0]//2
+            x2=image[0].shape[1]
+            y2=image[0].shape[0]
+
+    elif x1==-1 or y1==-1 or x2==-1 or y2==-1 or x2<=x1 or y2<=y1:
+        raise Exception(err_invalid_rectangular_roi)
+    if(is_list(image)):
+        image_RGB=[]
+        image_list=image
+        for img in image_list:
+            output=shadow_process(img,no_of_shadows,x1,y1,x2,y2, shadow_dimension)
+            image_RGB.append(output)
+    else:
+        output=shadow_process(image,no_of_shadows,x1,y1,x2,y2, shadow_dimension)
+        image_RGB = output
+
+    return image_RGB
