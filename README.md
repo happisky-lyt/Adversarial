@@ -18,8 +18,8 @@
 
 1. 克隆仓库到本地
 ```bash
-git clone https://github.com/mbzuai-oryx/GeoChat.git
-cd GeoChat
+git clone https://github.com/happisky-lyt/Adversarial.git
+cd Adversarial
 ```
 
 2. 创建虚拟环境
