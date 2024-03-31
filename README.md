@@ -5,7 +5,7 @@
 
 此项目是用于训练对抗样本的部分参考代码。为光学图像中的车辆目标生成贴纸形式的对抗样本，效果如图所示。
 
-![img.png](img.png)
+![img.png](/result/result.jpg)
 
 ---
 ## Contents
