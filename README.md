@@ -35,9 +35,18 @@ pip install -r requirements.txt  # 安装依赖项
 
 ---
 ## Train
+### Training YOLO-V3 Detector
+训练一个YOLO-V3车辆目标检测器。
+**数据集**：[visdrone2019](https://github.com/VisDrone/VisDrone-Dataset)
+
+- 注意：这里只训练车辆目标检测器，因此需要对数据集进行预处理，删除不包含车辆目标的图像和对应标签。
+
+**关于yolo-v3的版本问题**：不同版本的yolo-v5主要是其中的部分函数有区别，因此可以使用最新版的yolo-v3训练检测器，但是后面训练对抗样本的训练需要采用相同版本的yolo-v3。
+
+### Training Adversarial Examples
 We train adversarial examples on NVIDIA GeForce RTX 3060 Laptop GPU with 6144MiB memory.
 
-**训练数据**：存放在`train2`文件夹中。
+**训练数据**：存放在`train2`文件夹中。这里的数据是自己用无人机拍的。
 
 **权重**：事先由yolo-v3在visdrone19中训练得到。
 
