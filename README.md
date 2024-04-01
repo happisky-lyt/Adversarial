@@ -44,6 +44,12 @@ pip install -r requirements.txt  # 安装依赖项
 
 **关于yolo-v3的版本问题**：不同版本的yolo-v5主要是其中的部分函数有区别，因此可以使用最新版的yolo-v3训练检测器，但是后面训练对抗样本的训练需要采用相同版本的yolo-v3。
 
+**YOLO-v3/v5版本**：
+
+- [YOLO-v3](https://www.jianguoyun.com/p/DVzVyY8QuMC_DBilvr0FIAA (访问密码：EuriKL))访问密码：EuriKL
+- [YOLO-v5](https://www.jianguoyun.com/p/DYHD00kQuMC_DBi-vr0FIAA (访问密码：V7KNoT))访问密码：V7KNoT
+- [参考权重](https://www.jianguoyun.com/p/DZe6gAYQuMC_DBiVvb0FIAA (访问密码：pqjmWH))访问密码：pqjmWH
+
 ### Training Adversarial Examples
 We train adversarial examples on NVIDIA GeForce RTX 3060 Laptop GPU with 6144MiB memory.
 
